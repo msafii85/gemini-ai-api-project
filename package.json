@@ -17,7 +17,6 @@
     "express": "^5.1.0",
     "multer": "^2.0.2"
   },
-  "devDependencies": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/msafii85/gemini-ai-api-project.git"
