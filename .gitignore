@@ -1,0 +1,5 @@
+# File environment variable, JANGAN di-commit
+.env
+
+# Direktori dependensi
+/node_modules
