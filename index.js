@@ -1,29 +1,36 @@
 // Import library yang diperlukan
-import 'dotenv/config';
-import express from 'express';
-import multer from 'multer';
-import fs from 'fs/promises';
-import { GoogleGenAI } from '@google/genai';
+import 'dotenv/config'; // Mengimpor dan mengkonfigurasi dotenv untuk memuat variabel lingkungan dari file .env
+import express from 'express'; // Kerangka kerja web untuk Node.js
+import multer from 'multer'; // Middleware untuk menangani data multipart/form-data, terutama untuk unggahan file
+import fs from 'fs/promises'; // Modul File System dengan dukungan promise untuk operasi file asinkron
+import { GoogleGenAI } from '@google/genai'; // SDK Google GenAI untuk berinteraksi dengan model Gemini
 
-// buat variable app untuk express
-const app = express();
+// Membuat instance aplikasi Express
+const app = express(); 
 
-// buat variable upload untuk multer
-const upload = multer();
+// Membuat instance Multer untuk menangani unggahan file dalam memori
+const upload = multer(); 
 
-// buat variable untuk akses GoogleGenAi
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Menginisialisasi klien Google GenAI dengan kunci API dari variabel lingkungan
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY }); 
 
-// buat variable gemini model yang akan digunakan
-const GEMINI_MODEL = "gemini-2.0-flash";
+// Menentukan nama model Gemini yang akan digunakan
+const GEMINI_MODEL = "gemini-2.0-flash"; 
 
+// Middleware untuk mem-parsing body permintaan JSON yang masuk
 app.use(express.json());
 
-// Kita akan jalankan di local PORT 3000
-const PORT = 3000;
-app.listen(PORT, () => console.log(`Server ready on http://localhost:${PORT}`));
+// Menentukan port server
+const PORT = 3000; 
+// Menjalankan server pada port yang ditentukan dan mencatat pesan saat server siap
+app.listen(PORT, () => console.log(`Server ready on http://localhost:${PORT}`)); 
 
-// endpoint POST untuk generate text /generate-text
+/**
+ * @description Endpoint untuk menghasilkan konten teks berdasarkan prompt teks.
+ * Menerima permintaan POST dengan body JSON yang berisi 'prompt'.
+ * @route POST /generate-text
+ * @access Public
+ */
 app.post('/generate-text', async (req, res) => {
     const { prompt } = req.body;
 
@@ -42,7 +49,12 @@ app.post('/generate-text', async (req, res) => {
 })
 
 
-// endpoint POST untuk generate from image /generate-from-image
+/**
+ * @description Endpoint untuk menghasilkan konten teks berdasarkan gambar dan prompt teks.
+ * Menerima permintaan POST dengan data multipart/form-data yang berisi file 'image' dan field 'prompt'.
+ * @route POST /generate-from-image
+ * @access Public
+ */
 app.post('/generate-from-image', upload.single('image'), async (req, res) => {
     const { prompt } = req.body;
     const base64Image = req.file.buffer.toString('base64');
@@ -63,7 +75,12 @@ app.post('/generate-from-image', upload.single('image'), async (req, res) => {
         res.status(500).json({ message: e.message });
     }
 })
-// endpoint POST untuk generate from image /generate-from-document
+/**
+ * @description Endpoint untuk menghasilkan konten teks berdasarkan dokumen dan prompt teks.
+ * Menerima permintaan POST dengan data multipart/form-data yang berisi file 'document' dan field 'prompt' (opsional).
+ * @route POST /generate-from-document
+ * @access Public
+ */
 app.post('/generate-from-document', upload.single('document'), async (req, res) => {
     const { prompt } = req.body;
     const base64Document = req.file.buffer.toString('base64');
@@ -84,7 +101,12 @@ app.post('/generate-from-document', upload.single('document'), async (req, res) 
         res.status(500).json({ message: e.message });
     }
 })
-// endpoint POST untuk generate from image /generate-from-audio
+/**
+ * @description Endpoint untuk menghasilkan transkrip teks dari file audio.
+ * Menerima permintaan POST dengan data multipart/form-data yang berisi file 'audio' dan field 'prompt' (opsional).
+ * @route POST /generate-from-audio
+ * @access Public
+ */
 app.post('/generate-from-audio', upload.single('audio'), async (req, res) => {
     const { prompt } = req.body;
     const base64Audio = req.file.buffer.toString('base64');
