@@ -1,127 +1,107 @@
-// Mengimpor dan mengkonfigurasi dotenv untuk memuat variabel lingkungan dari file .env
+// Import library yang diperlukan
 import 'dotenv/config';
-// Mengimpor framework Express.js untuk membangun server web
 import express from 'express';
-// Mengimpor multer untuk menangani unggahan file (multipart/form-data)
 import multer from 'multer';
-// Mengimpor modul 'fs/promises' untuk operasi sistem file berbasis promise
 import fs from 'fs/promises';
-// Mengimpor GoogleGenAI dari SDK Google GenAI
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI } from '@google/genai';
 
-// Membuat instance aplikasi Express
+// buat variable app untuk express
 const app = express();
-// Membuat instance multer. Konfigurasi default akan menyimpan file di memori.
+
+// buat variable upload untuk multer
 const upload = multer();
-// Menginisialisasi klien Google GenAI dengan kunci API dari variabel lingkungan. Perhatikan perubahan dari 'apikey' ke 'apiKey'.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// Menetapkan konstanta untuk nama model Gemini yang akan digunakan. Menggunakan 'gemini-1.5-flash' untuk kompatibilitas.
-const GEMINI_MODEL = "gemini-2.5-flash";
+// buat variable untuk akses GoogleGenAi
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// Menambahkan middleware untuk mem-parsing body permintaan yang masuk sebagai JSON
+// buat variable gemini model yang akan digunakan
+const GEMINI_MODEL = "gemini-2.0-flash";
+
 app.use(express.json());
 
-// Menentukan port untuk server, menggunakan variabel lingkungan PORT jika tersedia, atau default ke 3000
+// Kita akan jalankan di local PORT 3000
 const PORT = 3000;
-
-// Memulai server dan membuatnya mendengarkan koneksi pada port yang ditentukan
 app.listen(PORT, () => console.log(`Server ready on http://localhost:${PORT}`));
 
-
-/**
- * @description Endpoint untuk menghasilkan teks berdasarkan prompt yang diberikan.
- * @route POST /generate-text
- */
-app.post('/generate-text', async(req, res) => {
-    // Mengekstrak 'prompt' dari body permintaan
+// endpoint POST untuk generate text /generate-text
+app.post('/generate-text', async (req, res) => {
     const { prompt } = req.body;
 
     try {
-        // Menghasilkan konten berdasarkan prompt menggunakan ai.models.generateContent
-        const result = await ai.models.generateContent({
+        // variable response berisi content yang digenerate oleh gemini
+        const response = await ai.models.generateContent({
             model: GEMINI_MODEL,
-            contents: [{ role: "user", parts: [{ text: prompt }] }]
+            contents: prompt,
         });
 
-        // Mengirimkan teks yang dihasilkan sebagai respons JSON
-        res.status(200).json({ result: result.response.text() })
-    } catch(e) {
-        // Mencatat kesalahan ke konsol
+        res.status(200).json({ result: response.text })
+    } catch (e) {
         console.log(e);
-        // Mengirimkan respons kesalahan server
         res.status(500).json({ message: e.message });
     }
 })
 
-/**
- * @description Endpoint untuk menghasilkan teks berdasarkan gambar dan prompt yang diberikan.
- * @route POST /generate-from-image
- */
-app.post("/generate-from-image", upload.single("image"), async (req, res) => {
-  // Mengekstrak 'prompt' dari body permintaan
-  const { prompt } = req.body;
-  // Mengonversi buffer gambar ke string base64
-  const base64Image = req.file.buffer.toString("base64");
-  try {
-    // Mendapatkan model generatif
-    const model = ai.getGenerativeModel({ model: GEMINI_MODEL });
-    // Menyiapkan bagian gambar untuk permintaan
-    const imagePart = { inlineData: { data: base64Image, mimeType: req.file.mimetype } };
-    // Menghasilkan konten dari prompt teks dan gambar
-    const result = await model.generateContent([prompt, imagePart]);
-    const response = await result.response;
-    const text = response.text();
-    // Mengirimkan teks yang dihasilkan sebagai respons JSON
-    res.status(200).json({ result: text });
-  } catch (e) {
-    // Mencatat kesalahan ke konsol
-    console.log(e);
-    // Mengirimkan respons kesalahan server
-    res.status(500).json({ message: e.message });
-  }
-});
 
-/**
- * @description Endpoint untuk menghasilkan teks berdasarkan dokumen dan prompt yang diberikan.
- * @route POST /generate-from-document
- */
-app.post("/generate-from-document", upload.single("document"), async (req, res) => {
-  // Mengekstrak 'prompt' dari body permintaan
-  const { prompt } = req.body;
-  // Mengonversi buffer dokumen ke string base64
-  const base64Document = req.file.buffer.toString("base64");
+// endpoint POST untuk generate from image /generate-from-image
+app.post('/generate-from-image', upload.single('image'), async (req, res) => {
+    const { prompt } = req.body;
+    const base64Image = req.file.buffer.toString('base64');
 
-  try {
-    // Mendapatkan model generatif
-    const model = ai.getGenerativeModel({ model: GEMINI_MODEL });
-    // Menyiapkan bagian dokumen untuk permintaan
-    const documentPart = { inlineData: { data: base64Document, mimeType: req.file.mimetype } };
-    // Menyiapkan prompt, menggunakan default jika tidak disediakan
-    const textPrompt = prompt ?? "Tolong buat ringkasan dari dokumen berikut menggunakan bahasa inggris: ";
-    // Menghasilkan konten dari prompt teks dan dokumen
-    const result = await model.generateContent([textPrompt, documentPart]);
-    const response = await result.response;
-    const text = response.text();
-    // Mengirimkan teks yang dihasilkan sebagai respons JSON
-    res.status(200).json({ result: text });
-  } catch (e) {
-    // Mencatat kesalahan ke konsol
-    console.log(e);
-    // Mengirimkan respons kesalahan server
-    res.status(500).json({ message: e.message });
-  }
-});
+    try {
+        // variable response berisi content yang digenerate oleh gemini
+        const response = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: [
+                { text: prompt, type: 'text' },
+                { inlineData: { data: base64Image, mimeType: req.file.mimetype } }
+            ],
+        });
 
-/**
- * @description Endpoint untuk menghasilkan teks berdasarkan file audio dan prompt yang diberikan.
- * @route POST /generate-from-audio
- */
-app.post("/generate-from-audio", upload.single("audio"), async (req, res) => {
-  // Mengekstrak 'prompt' dari body permintaan
-  const { prompt } = req.body;
-  // Mengonversi buffer audio ke string base64
-  const base64Audio = req.file.buffer.toString("base64");
-  // (Lanjutan dari kode di atas)
-  // ... (Logika untuk menangani file audio akan ditambahkan di sini)
-});
+        res.status(200).json({ result: response.text })
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({ message: e.message });
+    }
+})
+// endpoint POST untuk generate from image /generate-from-document
+app.post('/generate-from-document', upload.single('document'), async (req, res) => {
+    const { prompt } = req.body;
+    const base64Document = req.file.buffer.toString('base64');
+
+    try {
+        // variable response berisi content yang digenerate oleh gemini
+        const response = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: [
+                { text: prompt ?? "Tolong buat ringkasan dari dokumen berikut menggunakan bahasa inggris: ", type: 'text' },
+                { inlineData: { data: base64Document, mimeType: req.file.mimetype } }
+            ],
+        });
+
+        res.status(200).json({ result: response.text })
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({ message: e.message });
+    }
+})
+// endpoint POST untuk generate from image /generate-from-audio
+app.post('/generate-from-audio', upload.single('audio'), async (req, res) => {
+    const { prompt } = req.body;
+    const base64Audio = req.file.buffer.toString('base64');
+
+    try {
+        // variable response berisi content yang digenerate oleh gemini
+        const response = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: [
+                { text: prompt ?? "Tolong buatkan transkrip dari rekaman berikut", type: 'text' },
+                { inlineData: { data: base64Audio, mimeType: req.file.mimetype } }
+            ],
+        });
+
+        res.status(200).json({ result: response.text })
+    } catch (e) {
+        console.log(e);
+        res.status(500).json({ message: e.message });
+    }
+})
