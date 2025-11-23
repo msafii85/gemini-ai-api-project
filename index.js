@@ -13,11 +13,11 @@ import { GoogleGenAI } from "@google/genai";
 const app = express();
 // Membuat instance multer. Konfigurasi default akan menyimpan file di memori.
 const upload = multer();
-// Menginisialisasi klien Google GenAI dengan kunci API dari variabel lingkungan
-const ai = new GoogleGenAI({ apikey: process.env.API_KEY });
+// Menginisialisasi klien Google GenAI dengan kunci API dari variabel lingkungan. Perhatikan perubahan dari 'apikey' ke 'apiKey'.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// Menetapkan konstanta untuk nama model Gemini yang akan digunakan
-const GEMINI_MODEL = "gemini-2.0-flash";
+// Menetapkan konstanta untuk nama model Gemini yang akan digunakan. Menggunakan 'gemini-1.5-flash' untuk kompatibilitas.
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 // Menambahkan middleware untuk mem-parsing body permintaan yang masuk sebagai JSON
 app.use(express.json());
@@ -38,15 +38,14 @@ app.post('/generate-text', async(req, res) => {
     const { prompt } = req.body;
 
     try {
-        // Mendapatkan model generatif
-        const model = ai.getGenerativeModel({ model: GEMINI_MODEL });
-        // Menghasilkan konten berdasarkan prompt
-        const result = await model.generateContent(prompt);
-        // Mendapatkan respons teks dari hasil
-        const response = await result.response;
-        const text = response.text();
+        // Menghasilkan konten berdasarkan prompt menggunakan ai.models.generateContent
+        const result = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: [{ role: "user", parts: [{ text: prompt }] }]
+        });
 
-        res.status(200).json({ result: response.text })
+        // Mengirimkan teks yang dihasilkan sebagai respons JSON
+        res.status(200).json({ result: result.response.text() })
     } catch(e) {
         // Mencatat kesalahan ke konsol
         console.log(e);

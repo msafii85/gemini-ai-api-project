@@ -12,8 +12,18 @@
   "type": "module",
   "dependencies": {
     "@google/genai": "^1.30.0",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "multer": "^2.0.2"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/msafii85/gemini-ai-api-project.git"
+  },
+  "bugs": {
+    "url": "https://github.com/msafii85/gemini-ai-api-project/issues"
+  },
+  "homepage": "https://github.com/msafii85/gemini-ai-api-project#readme"
 }
